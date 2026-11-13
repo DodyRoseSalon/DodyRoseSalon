@@ -8,96 +8,153 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <!-- مكتبات التصدير PDF و Excel مع قماش QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .fade-in { animation: fadeIn 0.35s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
-<body class="bg-gray-50 font-sans min-h-screen flex flex-col justify-between">
+<body class="bg-gradient-to-br from-rose-50 via-gray-50 to-pink-50 min-h-screen flex flex-col justify-between text-gray-800">
 
-    <header class="bg-pink-600 text-white p-4 shadow-md text-center">
-        <h1 class="text-xl font-bold">نظام تبادل الخصومات - صالون دودي روز</h1>
-        <p class="text-xs text-pink-100 mt-1">بوابة التحقق وإصدار وتصدير الأكواد الذكية</p>
+    <!-- الهيدر -->
+    <header class="bg-gradient-to-l from-pink-700 via-pink-600 to-rose-500 text-white p-4 shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto max-w-lg flex items-center justify-between">
+            <div>
+                <h1 class="text-lg font-extrabold tracking-wide">صالون دودي روز ✨</h1>
+                <p class="text-[11px] text-pink-100">منصة إدارة وتبادل قسائم الخصم السحابية</p>
+            </div>
+            <div id="cloudStatus" class="flex items-center gap-1.5 bg-white/15 px-2.5 py-1 rounded-full text-[11px] backdrop-blur-sm">
+                <span class="w-2 h-2 rounded-full bg-amber-300 animate-pulse" id="statusDot"></span>
+                <span id="statusText">جاري الاتصال...</span>
+            </div>
+        </div>
     </header>
 
-    <main class="container mx-auto p-4 max-w-md flex-grow">
+    <main class="container mx-auto p-4 max-w-lg flex-grow">
 
         <!-- شاشة تسجيل الدخول -->
-        <div id="loginSection" class="bg-white p-6 rounded-xl shadow-md mt-10">
-            <h2 class="text-lg font-bold text-gray-800 mb-2 text-center">تسجيل الدخول للنظام</h2>
-            <p class="text-xs text-gray-500 text-center mb-4">الرجاء إدخال الرمز السري المعتمد</p>
+        <div id="loginSection" class="bg-white/90 backdrop-blur-md p-7 rounded-2xl shadow-xl border border-pink-100 mt-10 fade-in">
+            <div class="w-14 h-14 bg-pink-100 text-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">🔐</div>
+            <h2 class="text-xl font-extrabold text-gray-800 mb-1 text-center">تسجيل الدخول للنظام</h2>
+            <p class="text-xs text-gray-500 text-center mb-6">أدخل الرمز السري المعتمد للوصول إلى لوحة التحكم</p>
             
-            <input type="password" id="pinInput" placeholder="أدخل الرمز السري (PIN)" class="w-full p-3 border rounded-lg text-center text-lg tracking-widest mb-4 focus:outline-none focus:border-pink-500">
-            
-            <button onclick="verifyPin()" class="w-full bg-pink-600 text-white py-3 rounded-lg font-semibold hover:bg-pink-700 transition shadow">دخول</button>
-            <p id="loginError" class="text-red-500 text-xs text-center mt-2 hidden">الرمز السري غير صحيح!</p>
+            <div class="space-y-4">
+                <input type="password" id="pinInput" onkeyup="if(event.key === 'Enter') verifyPin()" placeholder="••••" maxlength="10" class="w-full p-3.5 border-2 border-gray-200 rounded-xl text-center text-2xl font-bold tracking-[0.4em] focus:outline-none focus:border-pink-500 transition bg-gray-50 focus:bg-white">
+                
+                <button id="loginBtn" onclick="verifyPin()" class="w-full bg-gradient-to-l from-pink-600 to-rose-500 text-white py-3.5 rounded-xl font-bold hover:from-pink-700 hover:to-rose-600 transition shadow-md active:scale-[0.99]">
+                    دخول آمن
+                </button>
+            </div>
+            <p id="loginError" class="text-red-600 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-center mt-4 hidden font-medium">⚠️ الرمز السري غير صحيح، يرجى المحاولة مرة أخرى.</p>
         </div>
 
-        <!-- لوحة التحكم المشتركة -->
-        <div id="dashboardSection" class="hidden space-y-6 mt-4">
-            <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
-                <span id="panelTitle" class="font-bold text-gray-700 text-sm"></span>
-                <div class="flex gap-2">
-                    <button id="settingsToggleBtn" onclick="toggleSettings()" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hidden hover:bg-gray-200">⚙️ الإعدادات</button>
-                    <button onclick="location.reload()" class="text-xs text-red-500 hover:underline">خروج</button>
+        <!-- لوحة التحكم الرئيسية -->
+        <div id="dashboardSection" class="hidden space-y-5 mt-2 fade-in">
+            
+            <!-- شريط المستخدم -->
+            <div class="flex justify-between items-center bg-white p-3.5 rounded-2xl shadow-sm border border-pink-100">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-9 h-9 rounded-xl bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-sm" id="roleIcon">👑</span>
+                    <div>
+                        <span id="panelTitle" class="font-bold text-gray-800 text-xs block"></span>
+                        <span id="panelSubtitle" class="text-[10px] text-gray-400 block">متصل بقاعدة البيانات السحابية</span>
+                    </div>
+                </div>
+                <div class="flex gap-1.5">
+                    <button id="settingsToggleBtn" onclick="toggleSettings()" class="text-xs bg-pink-50 text-pink-700 border border-pink-200 px-3 py-1.5 rounded-xl hidden hover:bg-pink-100 transition font-semibold">⚙️ الإعدادات</button>
+                    <button onclick="location.reload()" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-xl hover:bg-red-100 transition font-semibold">خروج</button>
                 </div>
             </div>
 
-            <!-- صفحة الإعدادات المنفصلة -->
-            <div id="adminSettingsSection" class="bg-pink-50 border border-pink-200 p-4 rounded-xl shadow-sm hidden space-y-3">
-                <div class="flex justify-between items-center border-b pb-2">
-                    <h3 class="font-bold text-pink-800 text-xs">⚙️ لوحة الإعدادات والرموز السرية</h3>
-                    <button onclick="toggleSettings()" class="text-xs text-gray-500 hover:text-black">✕ إغلاق</button>
+            <!-- لوحة الإعدادات السحابية المنفصلة (للمدير فقط) -->
+            <div id="adminSettingsSection" class="bg-white border-2 border-pink-200 p-5 rounded-2xl shadow-lg hidden space-y-4 fade-in">
+                <div class="flex justify-between items-center border-b border-gray-100 pb-2.5">
+                    <h3 class="font-extrabold text-pink-700 text-sm flex items-center gap-1.5">⚙️ الإعدادات السحابية والرموز السرية</h3>
+                    <button onclick="toggleSettings()" class="text-xs text-gray-400 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded-lg">✕ إغلاق</button>
                 </div>
+                <p class="text-[11px] text-gray-500 bg-amber-50 border border-amber-200 p-2 rounded-lg">💡 يتم حفظ هذه الإعدادات في السحابة وتنطبق فوراً على جميع الأجهزة.</p>
+                
                 <div>
-                    <label class="text-[11px] text-gray-600 block mb-1">اسم الجهة الشريكة:</label>
-                    <input type="text" id="settingPartnerName" class="w-full p-2 text-xs border rounded bg-white">
+                    <label class="text-xs font-bold text-gray-700 block mb-1">اسم الجهة الشريكة:</label>
+                    <input type="text" id="settingPartnerName" class="w-full p-2.5 text-xs border border-gray-300 rounded-xl bg-gray-50 focus:bg-white focus:border-pink-500 outline-none">
                 </div>
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                    <div>PIN المدير: <input type="text" id="settingPinAdmin" class="w-full p-1 border rounded bg-white text-center"></div>
-                    <div>PIN الاستقبال: <input type="text" id="settingPinReception" class="w-full p-1 border rounded bg-white text-center"></div>
-                    <div>PIN الشريك: <input type="text" id="settingPinPartner" class="w-full p-1 border rounded bg-white text-center"></div>
+                <div class="grid grid-cols-3 gap-2.5 text-xs">
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-600 block mb-1 text-center">PIN المدير</label>
+                        <input type="text" id="settingPinAdmin" class="w-full p-2 border border-gray-300 rounded-xl bg-gray-50 text-center font-mono font-bold focus:border-pink-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-600 block mb-1 text-center">PIN الاستقبال</label>
+                        <input type="text" id="settingPinReception" class="w-full p-2 border border-gray-300 rounded-xl bg-gray-50 text-center font-mono font-bold focus:border-pink-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-gray-600 block mb-1 text-center">PIN الشريك</label>
+                        <input type="text" id="settingPinPartner" class="w-full p-2 border border-gray-300 rounded-xl bg-gray-50 text-center font-mono font-bold focus:border-pink-500 outline-none">
+                    </div>
                 </div>
-                <button onclick="saveSettings()" class="w-full bg-pink-600 text-white py-1.5 rounded text-xs font-bold hover:bg-pink-700 mt-2">حفظ التغييرات</button>
+                <button id="saveSettingsBtn" onclick="saveSettings()" class="w-full bg-pink-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-pink-700 transition shadow">💾 حفظ وتحديث في قاعدة البيانات</button>
             </div>
 
-            <!-- قسم التحقق -->
-            <div class="bg-white p-4 rounded-xl shadow-md space-y-3">
-                <h3 class="font-bold text-gray-800 text-sm">📷 التحقق من الكود القادم</h3>
+            <!-- بطاقات الإحصائيات السريعة -->
+            <div id="statsBar" class="grid grid-cols-3 gap-2.5">
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 text-center">
+                    <span class="text-[11px] text-gray-400 block">إجمالي الأكواد</span>
+                    <span id="statTotal" class="text-lg font-extrabold text-gray-800">0</span>
+                </div>
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-emerald-100 text-center">
+                    <span class="text-[11px] text-emerald-600 block">الفعالة (النشطة)</span>
+                    <span id="statActive" class="text-lg font-extrabold text-emerald-600">0</span>
+                </div>
+                <div class="bg-white p-3 rounded-2xl shadow-sm border border-rose-100 text-center">
+                    <span class="text-[11px] text-rose-500 block">المستخدمة</span>
+                    <span id="statUsed" class="text-lg font-extrabold text-rose-500">0</span>
+                </div>
+            </div>
+
+            <!-- قسم التحقق والمسح -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-3">
+                <h3 class="font-extrabold text-gray-800 text-sm flex items-center gap-1.5">📷 التحقق وتفعيل الخصم</h3>
                 
                 <div class="grid grid-cols-2 gap-2">
-                    <button onclick="toggleScanner()" id="scannerToggleBtn" class="bg-emerald-600 text-white py-2 rounded text-xs font-semibold hover:bg-emerald-700 transition">🟢 الكاميرا المباشرة</button>
+                    <button onclick="toggleScanner()" id="scannerToggleBtn" class="bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-sm flex items-center justify-center gap-1">
+                        <span>🟢 الكاميرا المباشرة</span>
+                    </button>
                     
-                    <label class="bg-blue-600 text-white py-2 rounded text-xs font-semibold text-center block cursor-pointer hover:bg-blue-700 transition">
-                        📁 رفع صورة QR
+                    <label class="bg-indigo-600 text-white py-2.5 rounded-xl text-xs font-bold text-center cursor-pointer hover:bg-indigo-700 transition shadow-sm flex items-center justify-center gap-1">
+                        <span>📁 رفع صورة QR</span>
                         <input type="file" accept="image/*" onchange="scanImageFile(event)" class="hidden">
                     </label>
                 </div>
 
-                <div id="reader" class="w-full rounded-lg overflow-hidden border bg-gray-100 hidden"></div>
+                <div id="reader" class="w-full rounded-xl overflow-hidden border-2 border-emerald-200 bg-gray-900 hidden"></div>
 
-                <div class="flex gap-2 pt-2 border-t">
-                    <input type="text" id="scanCodeInput" placeholder="أو أدخل الكود يدوياً (مثال: DR-XXXX)" class="p-2 border rounded text-xs flex-grow uppercase">
-                    <button onclick="verifyCodeManual()" class="bg-pink-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-pink-700">تحقق وخصم</button>
+                <div class="flex gap-2 pt-2 border-t border-gray-100">
+                    <input type="text" id="scanCodeInput" onkeyup="if(event.key === 'Enter') verifyCodeManual()" placeholder="أدخل الكود يدوياً (مثال: DR-XXXX)" class="p-2.5 border border-gray-200 rounded-xl text-xs flex-grow uppercase font-mono focus:outline-none focus:border-pink-500 bg-gray-50 focus:bg-white">
+                    <button onclick="verifyCodeManual()" class="bg-pink-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-pink-700 transition shadow-sm">تحقق</button>
                 </div>
-                <div id="scanResult" class="p-3 rounded-lg text-center text-sm font-bold hidden"></div>
+                <div id="scanResult" class="p-3 rounded-xl text-center text-xs font-bold hidden fade-in"></div>
             </div>
 
-            <!-- قسم توليد وتصدير الأكواد -->
-            <div id="generatorSection" class="bg-white p-4 rounded-xl shadow-md">
-                <h3 id="generatorTitle" class="font-bold text-gray-800 mb-3 text-sm">🎫 إصدار وتصدير الأكواد</h3>
+            <!-- قسم إدارة وتوليد وتصدير الأكواد -->
+            <div id="generatorSection" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                 
-                <div id="adminGeneratorControls" class="space-y-3 mb-4 hidden border-b pb-3">
-                    <div class="grid grid-cols-2 gap-2">
+                <!-- أدوات الإصدار (للمدير فقط) -->
+                <div id="adminGeneratorControls" class="space-y-3 hidden border-b border-gray-100 pb-4">
+                    <h3 class="font-extrabold text-gray-800 text-sm">🎫 إصدار قسائم جديدة</h3>
+                    <div class="grid grid-cols-2 gap-2.5">
                         <div>
-                            <label class="text-[11px] text-gray-600 block mb-1">نوع الأكواد للإصدار:</label>
-                            <select id="codeTypeSelect" class="w-full p-2 text-xs border rounded bg-white">
+                            <label class="text-[11px] font-bold text-gray-600 block mb-1">الجهة المستفيدة:</label>
+                            <select id="codeTypeSelect" class="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-gray-50 font-semibold outline-none focus:border-pink-500">
                                 <option value="dody">أكواد صالون دودي روز (DR)</option>
                                 <option id="partnerOptionLabel" value="partner">أكواد الجهة الشريكة (PR)</option>
                             </select>
                         </div>
                         <div>
-                            <label class="text-[11px] text-gray-600 block mb-1">العدد:</label>
-                            <select id="codeCountSelect" class="w-full p-2 text-xs border rounded bg-white">
+                            <label class="text-[11px] font-bold text-gray-600 block mb-1">الكمية:</label>
+                            <select id="codeCountSelect" class="w-full p-2.5 text-xs border border-gray-200 rounded-xl bg-gray-50 font-semibold outline-none focus:border-pink-500">
                                 <option value="5">5 أكواد</option>
                                 <option value="10" selected>10 أكواد</option>
                                 <option value="20">20 كود</option>
@@ -105,52 +162,66 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="generateCodes()" class="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition text-xs">توليد وإصدار الأكواد الجديدة</button>
+                    <button onclick="generateCodes()" class="w-full bg-gradient-to-l from-emerald-600 to-teal-500 text-white py-2.5 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-600 transition text-xs shadow-sm">
+                        ➕ توليد وإصدار الأكواد الآن
+                    </button>
                 </div>
 
-                <!-- أقسام التصدير المستقلة لكل جهة (تظهر للمدير فقط) -->
-                <div id="exportSection" class="mb-4 hidden space-y-3 bg-gray-50 p-3 rounded-lg border">
-                    <label class="text-xs text-gray-800 font-bold block border-b pb-1">📥 تصدير الأكواد الفعالة (نشطة وغير مستخدمة):</label>
+                <!-- أدوات التصدير المستقلة (للمدير فقط) -->
+                <div id="exportSection" class="hidden space-y-2.5 bg-gray-50 p-3.5 rounded-xl border border-gray-200/80">
+                    <label class="text-xs text-gray-800 font-extrabold block">📥 تصدير الأكواد الفعالة (كل جهة على حدة):</label>
                     
-                    <!-- تصدير أكواد الصالون DR -->
-                    <div class="flex justify-between items-center bg-white p-2 rounded border">
-                        <span class="text-xs font-semibold text-pink-700">أكواد صالون دودي روز (DR)</span>
-                        <div class="flex gap-1">
-                            <button onclick="exportActiveCodes('dody', 'excel')" class="bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-emerald-800">📊 Excel</button>
-                            <button onclick="exportActiveCodes('dody', 'pdf')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-red-700">📄 PDF (مع QR)</button>
+                    <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100 shadow-2xs">
+                        <span class="text-xs font-bold text-pink-700">أكواد الصالون (DR)</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="exportActiveCodes('dody', 'excel')" class="bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-800 transition">📊 Excel</button>
+                            <button onclick="exportActiveCodes('dody', 'pdf')" class="bg-rose-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-700 transition">📄 PDF + QR</button>
                         </div>
                     </div>
 
-                    <!-- تصدير أكواد الشريك PR -->
-                    <div class="flex justify-between items-center bg-white p-2 rounded border">
-                        <span id="partnerExportLabel" class="text-xs font-semibold text-indigo-700">أكواد الشريك (PR)</span>
-                        <div class="flex gap-1">
-                            <button onclick="exportActiveCodes('partner', 'excel')" class="bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-emerald-800">📊 Excel</button>
-                            <button onclick="exportActiveCodes('partner', 'pdf')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-red-700">📄 PDF (مع QR)</button>
+                    <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100 shadow-2xs">
+                        <span id="partnerExportLabel" class="text-xs font-bold text-indigo-700">أكواد الشريك (PR)</span>
+                        <div class="flex gap-1.5">
+                            <button onclick="exportActiveCodes('partner', 'excel')" class="bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-emerald-800 transition">📊 Excel</button>
+                            <button onclick="exportActiveCodes('partner', 'pdf')" class="bg-rose-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold hover:bg-rose-700 transition">📄 PDF + QR</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center mb-2">
-                    <span id="listHeading" class="text-xs font-bold text-gray-700">القائمة:</span>
-                    <button onclick="loadMyCodes()" class="text-xs text-blue-600 hover:underline">🔄 تحديث القائمة</button>
+                <!-- شريط الفلترة والبحث الديناميكي -->
+                <div class="space-y-2.5 pt-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-extrabold text-gray-800">📋 سجل الأكواد</span>
+                        <button onclick="loadMyCodes()" class="text-xs text-pink-600 font-bold hover:underline flex items-center gap-1">🔄 تحديث</button>
+                    </div>
+
+                    <!-- تبويبات التصفية -->
+                    <div class="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl text-xs font-bold" id="filterTabs">
+                        <button onclick="setFilter('all')" id="tab-all" class="py-1.5 rounded-lg bg-white text-pink-600 shadow-2xs transition">الكل</button>
+                        <button onclick="setFilter('active')" id="tab-active" class="py-1.5 rounded-lg text-gray-500 hover:text-gray-800 transition">النشطة</button>
+                        <button onclick="setFilter('used')" id="tab-used" class="py-1.5 rounded-lg text-gray-500 hover:text-gray-800 transition">المستخدمة</button>
+                    </div>
+
+                    <!-- حقل البحث السريع -->
+                    <input type="text" id="searchInput" oninput="renderFilteredCodes()" placeholder="🔍 ابحث برقم الكود..." class="w-full p-2 text-xs border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-pink-400 outline-none">
                 </div>
-                <div id="generatedList" class="space-y-4 max-h-96 overflow-y-auto pr-1"></div>
+
+                <!-- قائمة البطاقات -->
+                <div id="generatedList" class="space-y-3 max-h-[28rem] overflow-y-auto pr-1"></div>
             </div>
         </div>
 
     </main>
 
-    <footer class="text-center p-4 text-xs text-gray-400">
-        جميع الحقوق محفوظة © 2026 صالون دودي روز
+    <footer class="text-center p-4 text-[11px] text-gray-400">
+        جميع الحقوق محفوظة © 2026 صالون دودي روز للتزيين النسائي
     </footer>
 
-    <!-- عنصر خفي لتوليد صور الـ QR بصرياً عند تصدير الـ PDF -->
     <div id="hiddenQrContainer" style="display:none;"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyA9zQqXFtL_YPnbVbLL2o8hC-wP3GaStZ8",
@@ -165,7 +236,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        let configData = JSON.parse(localStorage.getItem('dody_config')) || {
+        // الإعدادات الافتراضية لحين الجلب من Firebase
+        let configData = {
             adminPin: "1122",
             receptionPin: "3344",
             partnerPin: "8899",
@@ -173,18 +245,59 @@
         };
 
         let currentRole = "";
+        let allFetchedCodes = [];
+        let currentFilter = "all";
         let html5QrCode = null;
         let isScannerRunning = false;
 
-        window.verifyPin = function() {
+        // جلب الإعدادات وكلمات المرور من قاعدة البيانات عند فتح الصفحة
+        async function loadCloudConfig() {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            try {
+                const configRef = doc(db, "settings", "app_config");
+                const configSnap = await getDoc(configRef);
+                
+                if (configSnap.exists()) {
+                    configData = { ...configData, ...configSnap.data() };
+                } else {
+                    // إنشاء مستند الإعدادات لأول مرة في السحابة
+                    await setDoc(configRef, configData);
+                }
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                text.innerText = "متصل بالسحابة";
+            } catch (error) {
+                console.error("Config load error:", error);
+                dot.className = "w-2 h-2 rounded-full bg-red-400";
+                text.innerText = "وضع محلي";
+            }
+        }
+
+        // استدعاء الإعدادات فوراً
+        loadCloudConfig();
+
+        window.verifyPin = async function() {
+            const btn = document.getElementById('loginBtn');
             const pin = document.getElementById('pinInput').value.trim();
             const errorMsg = document.getElementById('loginError');
             
+            btn.innerText = "جاري التحقق...";
+            btn.disabled = true;
+
+            // تحديث الإعدادات من السحابة لضمان قراءة أحدث كلمة مرور
+            await loadCloudConfig();
+
+            btn.innerText = "دخول آمن";
+            btn.disabled = false;
+            
             if (pin === configData.adminPin) {
+                errorMsg.classList.add('hidden');
                 openPanel('admin', true, true);
             } else if (pin === configData.receptionPin) {
+                errorMsg.classList.add('hidden');
                 openPanel('reception', false, false);
             } else if (pin === configData.partnerPin) {
+                errorMsg.classList.add('hidden');
                 openPanel('partner', false, false);
             } else {
                 errorMsg.classList.remove('hidden');
@@ -200,11 +313,20 @@
             document.getElementById('partnerExportLabel').innerText = `أكواد ${configData.partnerName} (PR)`;
 
             let title = "";
-            if (role === 'admin') title = "إدارة صالون دودي روز (صلاحية كاملة)";
-            else if (role === 'reception') title = "استقبال صالون دودي روز (أكواد DR)";
-            else title = `لوحة تحكم الشريك: ${configData.partnerName}`;
+            let icon = "";
+            if (role === 'admin') {
+                title = "إدارة صالون دودي روز";
+                icon = "👑";
+            } else if (role === 'reception') {
+                title = "استقبال الصالون (أكواد DR)";
+                icon = "💁‍♀️";
+            } else {
+                title = `الشريك: ${configData.partnerName}`;
+                icon = "🤝";
+            }
             
             document.getElementById('panelTitle').innerText = title;
+            document.getElementById('roleIcon').innerText = icon;
 
             if (isAdmin) {
                 document.getElementById('settingsToggleBtn').classList.remove('hidden');
@@ -212,46 +334,55 @@
                 document.getElementById('settingPinAdmin').value = configData.adminPin;
                 document.getElementById('settingPinReception').value = configData.receptionPin;
                 document.getElementById('settingPinPartner').value = configData.partnerPin;
+                document.getElementById('adminGeneratorControls').classList.remove('hidden');
+                document.getElementById('exportSection').classList.remove('hidden');
+            } else {
+                document.getElementById('adminGeneratorControls').classList.add('hidden');
+                document.getElementById('exportSection').classList.add('hidden');
             }
 
-            if (role === 'reception') {
-                document.getElementById('generatorSection').classList.add('hidden');
-            } else {
-                document.getElementById('generatorSection').classList.remove('hidden');
-                if (isAdmin) {
-                    document.getElementById('adminGeneratorControls').classList.remove('hidden');
-                    document.getElementById('exportSection').classList.remove('hidden');
-                } else {
-                    document.getElementById('adminGeneratorControls').classList.add('hidden');
-                    document.getElementById('exportSection').classList.add('hidden');
-                }
-                loadMyCodes();
-            }
+            // تفعيل قسم عرض الأكواد للجميع (المدير يرى الكل، الاستقبال يرى DR، الشريك يرى PR)
+            document.getElementById('generatorSection').classList.remove('hidden');
+            loadMyCodes();
         }
 
         window.toggleSettings = function() {
-            const settingsSec = document.getElementById('adminSettingsSection');
-            settingsSec.classList.toggle('hidden');
+            document.getElementById('adminSettingsSection').classList.toggle('hidden');
         }
 
-        window.saveSettings = function() {
-            configData.partnerName = document.getElementById('settingPartnerName').value.trim() || "الجهة الخدمية الشريكة";
-            configData.adminPin = document.getElementById('settingPinAdmin').value.trim() || "1122";
-            configData.receptionPin = document.getElementById('settingPinReception').value.trim() || "3344";
-            configData.partnerPin = document.getElementById('settingPinPartner').value.trim() || "8899";
-            
-            localStorage.setItem('dody_config', JSON.stringify(configData));
-            alert("✅ تم حفظ الإعدادات بنجاح!");
-            location.reload();
+        window.saveSettings = async function() {
+            const btn = document.getElementById('saveSettingsBtn');
+            btn.innerText = "⏳ جاري الحفظ في قاعدة البيانات...";
+            btn.disabled = true;
+
+            const updatedConfig = {
+                partnerName: document.getElementById('settingPartnerName').value.trim() || "الجهة الخدمية الشريكة",
+                adminPin: document.getElementById('settingPinAdmin').value.trim() || "1122",
+                receptionPin: document.getElementById('settingPinReception').value.trim() || "3344",
+                partnerPin: document.getElementById('settingPinPartner').value.trim() || "8899"
+            };
+
+            try {
+                await setDoc(doc(db, "settings", "app_config"), updatedConfig);
+                configData = updatedConfig;
+                alert("✅ تم حفظ الإعدادات وكلمات المرور في قاعدة البيانات بنجاح!");
+                toggleSettings();
+                document.getElementById('partnerOptionLabel').innerText = `أكواد ${configData.partnerName} (PR)`;
+                document.getElementById('partnerExportLabel').innerText = `أكواد ${configData.partnerName} (PR)`;
+            } catch (error) {
+                alert("❌ تعذر الحفظ في قاعدة البيانات: " + error.message);
+            } finally {
+                btn.innerText = "💾 حفظ وتحديث في قاعدة البيانات";
+                btn.disabled = false;
+            }
         }
 
         window.generateCodes = async function() {
             const typeSelect = document.getElementById('codeTypeSelect').value;
-            const countSelect = document.getElementById('codeCountSelect');
-            const totalToGenerate = parseInt(countSelect.value);
+            const totalToGenerate = parseInt(document.getElementById('codeCountSelect').value);
             const listDiv = document.getElementById('generatedList');
             
-            listDiv.innerHTML = `<p class='text-blue-600 text-center text-xs'>جاري إصدار ${totalToGenerate} كود جديد...</p>`;
+            listDiv.innerHTML = `<div class='text-center py-6 text-pink-600 text-xs font-bold animate-pulse'>⏳ جاري إصدار وحفظ ${totalToGenerate} قسيمة جديدة...</div>`;
             
             try {
                 for(let i = 1; i <= totalToGenerate; i++) {
@@ -264,83 +395,124 @@
                         createdAt: new Date()
                     });
                 }
-                loadMyCodes();
+                await loadMyCodes();
             } catch(e) {
-                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs'>حدث خطأ أثناء الاتصال بقاعدة البيانات.</p>";
+                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs py-4'>حدث خطأ أثناء الاتصال بقاعدة البيانات.</p>";
             }
         }
 
         window.loadMyCodes = async function() {
             const listDiv = document.getElementById('generatedList');
             if(!listDiv) return;
-            listDiv.innerHTML = "<p class='text-gray-500 text-center text-xs'>جاري جلب الأكواد...</p>";
+            listDiv.innerHTML = "<div class='text-center py-6 text-gray-400 text-xs animate-pulse'>جاري مزامنة الأكواد...</div>";
 
             try {
                 const querySnapshot = await getDocs(collection(db, "promo_codes"));
-                listDiv.innerHTML = "";
-                let count = 0;
+                allFetchedCodes = [];
 
                 querySnapshot.forEach((docItem) => {
                     let data = docItem.data();
                     let showCode = false;
-                    if (currentRole === 'admin') {
-                        showCode = true;
-                    } else if (currentRole === 'reception') {
-                        if (data.issuer === 'dody') showCode = true;
-                    } else if (currentRole === 'partner') {
-                        if (data.issuer === 'partner') showCode = true;
-                    }
+                    if (currentRole === 'admin') showCode = true;
+                    else if (currentRole === 'reception' && data.issuer === 'dody') showCode = true;
+                    else if (currentRole === 'partner' && data.issuer === 'partner') showCode = true;
 
                     if (showCode) {
-                        count++;
-                        const isUsed = data.status === 'used';
-                        const statusBadge = !isUsed 
-                            ? '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[11px] font-bold">نشط (صالح)</span>' 
-                            : '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[11px] font-bold">مستخدم (منتهي)</span>';
-                        
-                        const qrContainerId = `qr-${docItem.id}`;
-                        const card = document.createElement('div');
-                        card.className = `p-3 rounded-xl border ${isUsed ? 'bg-gray-100 opacity-70' : 'bg-white shadow-sm'} flex items-center justify-between gap-3`;
-                        
-                        card.innerHTML = `
-                            <div class="flex flex-col items-center">
-                                <div id="${qrContainerId}" class="p-1 bg-white border rounded"></div>
-                            </div>
-                            <div class="flex-grow text-right space-y-1">
-                                <div class="font-mono font-bold text-gray-800 text-sm">${data.code} (${data.issuer === 'dody' ? 'صالون' : 'شريك'})</div>
-                                <div>${statusBadge}</div>
-                                ${!isUsed ? `
-                                <div class="pt-2 flex flex-wrap gap-1">
-                                    <button onclick="downloadQR('${qrContainerId}', '${data.code}')" class="bg-gray-800 text-white px-2 py-1 rounded text-[11px] hover:bg-gray-700">⬇️ حفظ الصورة</button>
-                                    <button onclick="sendWhatsApp('${data.code}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] hover:bg-emerald-700">📲 واتساب</button>
-                                </div>
-                                ` : ''}
-                            </div>
-                        `;
-                        listDiv.appendChild(card);
-
-                        new QRCode(document.getElementById(qrContainerId), {
-                            text: data.code,
-                            width: 75,
-                            height: 75,
-                            colorDark : "#000000",
-                            colorLight : "#ffffff",
-                            correctLevel : QRCode.CorrectLevel.H
-                        });
+                        allFetchedCodes.push({ id: docItem.id, ...data });
                     }
                 });
 
-                if (count === 0) {
-                    listDiv.innerHTML = "<p class='text-gray-400 text-center text-xs'>لا توجد أكواد مطابقة لهذه الصفحة حالياً.</p>";
-                }
+                // تحديث الإحصائيات
+                const total = allFetchedCodes.length;
+                const active = allFetchedCodes.filter(c => c.status === 'active').length;
+                const used = allFetchedCodes.filter(c => c.status === 'used').length;
+
+                document.getElementById('statTotal').innerText = total;
+                document.getElementById('statActive').innerText = active;
+                document.getElementById('statUsed').innerText = used;
+
+                renderFilteredCodes();
             } catch (error) {
-                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs'>خطأ في جلب الأكواد.</p>";
+                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs py-4'>خطأ في جلب الأكواد.</p>";
             }
         }
 
-        // دالة تصدير الأكواد الفعالة لكل جهة على حدة مع تضمين صور رمز QR في ملف PDF
+        window.setFilter = function(filterType) {
+            currentFilter = filterType;
+            ['all', 'active', 'used'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (t === filterType) {
+                    btn.className = "py-1.5 rounded-lg bg-white text-pink-600 shadow-2xs transition";
+                } else {
+                    btn.className = "py-1.5 rounded-lg text-gray-500 hover:text-gray-800 transition";
+                }
+            });
+            renderFilteredCodes();
+        }
+
+        window.renderFilteredCodes = function() {
+            const listDiv = document.getElementById('generatedList');
+            const searchQuery = (document.getElementById('searchInput').value || "").trim().toUpperCase();
+            listDiv.innerHTML = "";
+
+            const filtered = allFetchedCodes.filter(item => {
+                const matchesTab = (currentFilter === 'all') || (item.status === currentFilter);
+                const matchesSearch = !searchQuery || item.code.includes(searchQuery);
+                return matchesTab && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = "<p class='text-gray-400 text-center text-xs py-6'>لا توجد أكواد مطابقة للعرض حالياً.</p>";
+                return;
+            }
+
+            filtered.forEach((data) => {
+                const isUsed = data.status === 'used';
+                const statusBadge = !isUsed 
+                    ? '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full text-[10px] font-bold">● نشط (صالح)</span>' 
+                    : '<span class="bg-rose-50 text-rose-600 border border-rose-200 px-2 py-0.5 rounded-full text-[10px] font-bold">✕ مستخدم</span>';
+                
+                const issuerBadge = data.issuer === 'dody'
+                    ? '<span class="bg-pink-50 text-pink-700 px-2 py-0.5 rounded-md text-[10px] font-bold">صالون</span>'
+                    : '<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md text-[10px] font-bold">شريك</span>';
+
+                const qrContainerId = `qr-${data.id}`;
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border transition ${isUsed ? 'bg-gray-50/80 border-gray-200 opacity-75' : 'bg-white border-pink-100 shadow-xs hover:shadow-md'} flex items-center justify-between gap-3 fade-in`;
+                
+                card.innerHTML = `
+                    <div class="flex flex-col items-center shrink-0">
+                        <div id="${qrContainerId}" class="p-1.5 bg-white border border-gray-200 rounded-xl shadow-2xs"></div>
+                    </div>
+                    <div class="flex-grow text-right space-y-1.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="font-mono font-extrabold text-gray-800 text-sm tracking-wider">${data.code}</span>
+                            ${issuerBadge}
+                        </div>
+                        <div>${statusBadge}</div>
+                        ${!isUsed ? `
+                        <div class="pt-1 flex flex-wrap gap-1.5">
+                            <button onclick="downloadQR('${qrContainerId}', '${data.code}')" class="bg-gray-800 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold hover:bg-gray-700 transition">⬇️ حفظ QR</button>
+                            <button onclick="sendWhatsApp('${data.code}')" class="bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold hover:bg-emerald-700 transition">📲 واتساب</button>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                listDiv.appendChild(card);
+
+                new QRCode(document.getElementById(qrContainerId), {
+                    text: data.code,
+                    width: 72,
+                    height: 72,
+                    colorDark : "#1f2937",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            });
+        }
+
         window.exportActiveCodes = async function(targetIssuer, format) {
-            const targetTitle = (targetIssuer === 'dody') ? 'أكواد صالون دودي روز (DR)' : `أكواد الشريك ${configData.partnerName} (PR)`;
+            const targetTitle = (targetIssuer === 'dody') ? 'Dody Rose Salon (DR)' : `Partner ${configData.partnerName} (PR)`;
 
             try {
                 const querySnapshot = await getDocs(collection(db, "promo_codes"));
@@ -391,15 +563,13 @@
                             y = 20;
                         }
 
-                        // رسم نص الكود
                         docPDF.setFontSize(11);
                         docPDF.text(`${i + 1}. Code: ${code} [Status: Active]`, 20, y + 10);
 
-                        // توليد رمز QR بصرياً داخل عنصر مخفي للحصول على صورة Base64
                         let tempDiv = document.createElement('div');
                         hiddenContainer.appendChild(tempDiv);
                         
-                        let qr = new QRCode(tempDiv, {
+                        new QRCode(tempDiv, {
                             text: code,
                             width: 60,
                             height: 60,
@@ -408,13 +578,11 @@
                             correctLevel: QRCode.CorrectLevel.H
                         });
 
-                        // الانتظار حتى يتم رندر الرمز واستخلاص صورته
                         await new Promise(resolve => setTimeout(resolve, 50));
                         let canvas = tempDiv.querySelector('canvas');
                         let imgData = canvas ? canvas.toDataURL("image/png") : "";
 
                         if (imgData) {
-                            // إدراج صورة QR بجانب الكود في ملف الـ PDF
                             docPDF.addImage(imgData, 'PNG', 130, y, 25, 25);
                         }
 
@@ -423,7 +591,6 @@
 
                     docPDF.save(`Active_Codes_${targetIssuer}_with_QR.pdf`);
                 }
-
             } catch (err) {
                 alert("حدث خطأ أثناء التصدير: " + err.message);
             }
@@ -459,8 +626,8 @@
 
             if (!isScannerRunning) {
                 readerDiv.classList.remove('hidden');
-                toggleBtn.innerText = "🔴 إغلاق الكاميرا";
-                toggleBtn.className = "bg-red-100 text-red-700 py-2 rounded text-xs font-semibold hover:bg-red-200 transition";
+                toggleBtn.innerHTML = "<span>🔴 إغلاق الكاميرا</span>";
+                toggleBtn.className = "bg-rose-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-rose-700 transition shadow-sm flex items-center justify-center gap-1";
                 
                 try {
                     if (!html5QrCode) {
@@ -477,7 +644,7 @@
                     ).then(() => {
                         isScannerRunning = true;
                     }).catch(err => {
-                        alert("تعذر تشغيل الكاميرا، تأكد من إعطاء إذن الكاميرا.");
+                        alert("تعذر تشغيل الكاميرا، تأكد من إعطاء إذن الكاميرا للمتصفح.");
                         toggleScanner();
                     });
                 } catch(e) {
@@ -494,8 +661,8 @@
                     isScannerRunning = false;
                     document.getElementById('reader').classList.add('hidden');
                     const toggleBtn = document.getElementById('scannerToggleBtn');
-                    toggleBtn.innerText = "🟢 الكاميرا المباشرة";
-                    toggleBtn.className = "bg-emerald-600 text-white py-2 rounded text-xs font-semibold hover:bg-emerald-700 transition";
+                    toggleBtn.innerHTML = "<span>🟢 الكاميرا المباشرة</span>";
+                    toggleBtn.className = "bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-sm flex items-center justify-center gap-1";
                 }).catch(err => {});
             }
         }
@@ -523,7 +690,7 @@
                         const resultDiv = document.getElementById('scanResult');
                         resultDiv.classList.remove('hidden');
                         resultDiv.innerText = "❌ لم يتم التعرف على الرمز في الصورة، حاول رفع صورة أوضح أو أدخله يدوياً.";
-                        resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                        resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-red-100 text-red-700 border border-red-200 fade-in";
                     }
                 };
                 img.src = e.target.result;
@@ -545,8 +712,8 @@
             const resultDiv = document.getElementById('scanResult');
             if(!resultDiv) return;
             resultDiv.classList.remove('hidden');
-            resultDiv.innerText = "جاري التحقق من الكود...";
-            resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-yellow-100 text-yellow-800";
+            resultDiv.innerText = "⏳ جاري التحقق من الكود...";
+            resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 fade-in";
 
             try {
                 const querySnapshot = await getDocs(collection(db, "promo_codes"));
@@ -561,13 +728,13 @@
 
                 if (!foundDoc) {
                     resultDiv.innerText = "❌ الكود غير موجود أو غير صحيح!";
-                    resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                    resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-red-50 text-red-700 border border-red-200 fade-in";
                     return;
                 }
 
                 if (foundDoc.status === "used") {
                     resultDiv.innerText = "⚠️ تنبيه: هذا الكود تم استخدامه مسبقاً!";
-                    resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                    resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-red-50 text-red-700 border border-red-200 fade-in";
                     return;
                 }
 
@@ -575,12 +742,12 @@
                 await updateDoc(codeRef, { status: "used" });
 
                 resultDiv.innerText = "✅ الكود صالح وتم تفعيل الخصم بنجاح! (تم إيقاف الكود)";
-                resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-green-100 text-green-700";
+                resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 fade-in";
                 
                 loadMyCodes();
             } catch (error) {
                 resultDiv.innerText = "حدث خطأ أثناء التحقق: " + error.message;
-                resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                resultDiv.className = "p-3 rounded-xl text-center text-xs font-bold bg-red-50 text-red-700 border border-red-200 fade-in";
             }
         }
     </script>
