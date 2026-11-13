@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام كوبونات الخصم - صالون دودي روز</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <!-- مكتبات التصدير PDF و Excel مع قماش QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen flex flex-col justify-between">
+
+    <header class="bg-pink-600 text-white p-4 shadow-md text-center">
+        <h1 class="text-xl font-bold">نظام تبادل الخصومات - صالون دودي روز</h1>
+        <p class="text-xs text-pink-100 mt-1">بوابة التحقق وإصدار وتصدير الأكواد الذكية</p>
+    </header>
+
+    <main class="container mx-auto p-4 max-w-md flex-grow">
+
+        <!-- شاشة تسجيل الدخول -->
+        <div id="loginSection" class="bg-white p-6 rounded-xl shadow-md mt-10">
+            <h2 class="text-lg font-bold text-gray-800 mb-2 text-center">تسجيل الدخول للنظام</h2>
+            <p class="text-xs text-gray-500 text-center mb-4">الرجاء إدخال الرمز السري المعتمد</p>
+            
+            <input type="password" id="pinInput" placeholder="أدخل الرمز السري (PIN)" class="w-full p-3 border rounded-lg text-center text-lg tracking-widest mb-4 focus:outline-none focus:border-pink-500">
+            
+            <button onclick="verifyPin()" class="w-full bg-pink-600 text-white py-3 rounded-lg font-semibold hover:bg-pink-700 transition shadow">دخول</button>
+            <p id="loginError" class="text-red-500 text-xs text-center mt-2 hidden">الرمز السري غير صحيح!</p>
+        </div>
+
+        <!-- لوحة التحكم المشتركة -->
+        <div id="dashboardSection" class="hidden space-y-6 mt-4">
+            <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+                <span id="panelTitle" class="font-bold text-gray-700 text-sm"></span>
+                <div class="flex gap-2">
+                    <button id="settingsToggleBtn" onclick="toggleSettings()" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded hidden hover:bg-gray-200">⚙️ الإعدادات</button>
+                    <button onclick="location.reload()" class="text-xs text-red-500 hover:underline">خروج</button>
+                </div>
+            </div>
+
+            <!-- صفحة الإعدادات المنفصلة -->
+            <div id="adminSettingsSection" class="bg-pink-50 border border-pink-200 p-4 rounded-xl shadow-sm hidden space-y-3">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="font-bold text-pink-800 text-xs">⚙️ لوحة الإعدادات والرموز السرية</h3>
+                    <button onclick="toggleSettings()" class="text-xs text-gray-500 hover:text-black">✕ إغلاق</button>
+                </div>
+                <div>
+                    <label class="text-[11px] text-gray-600 block mb-1">اسم الجهة الشريكة:</label>
+                    <input type="text" id="settingPartnerName" class="w-full p-2 text-xs border rounded bg-white">
+                </div>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>PIN المدير: <input type="text" id="settingPinAdmin" class="w-full p-1 border rounded bg-white text-center"></div>
+                    <div>PIN الاستقبال: <input type="text" id="settingPinReception" class="w-full p-1 border rounded bg-white text-center"></div>
+                    <div>PIN الشريك: <input type="text" id="settingPinPartner" class="w-full p-1 border rounded bg-white text-center"></div>
+                </div>
+                <button onclick="saveSettings()" class="w-full bg-pink-600 text-white py-1.5 rounded text-xs font-bold hover:bg-pink-700 mt-2">حفظ التغييرات</button>
+            </div>
+
+            <!-- قسم التحقق -->
+            <div class="bg-white p-4 rounded-xl shadow-md space-y-3">
+                <h3 class="font-bold text-gray-800 text-sm">📷 التحقق من الكود القادم</h3>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="toggleScanner()" id="scannerToggleBtn" class="bg-emerald-600 text-white py-2 rounded text-xs font-semibold hover:bg-emerald-700 transition">🟢 الكاميرا المباشرة</button>
+                    
+                    <label class="bg-blue-600 text-white py-2 rounded text-xs font-semibold text-center block cursor-pointer hover:bg-blue-700 transition">
+                        📁 رفع صورة QR
+                        <input type="file" accept="image/*" onchange="scanImageFile(event)" class="hidden">
+                    </label>
+                </div>
+
+                <div id="reader" class="w-full rounded-lg overflow-hidden border bg-gray-100 hidden"></div>
+
+                <div class="flex gap-2 pt-2 border-t">
+                    <input type="text" id="scanCodeInput" placeholder="أو أدخل الكود يدوياً (مثال: DR-XXXX)" class="p-2 border rounded text-xs flex-grow uppercase">
+                    <button onclick="verifyCodeManual()" class="bg-pink-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-pink-700">تحقق وخصم</button>
+                </div>
+                <div id="scanResult" class="p-3 rounded-lg text-center text-sm font-bold hidden"></div>
+            </div>
+
+            <!-- قسم توليد وتصدير الأكواد -->
+            <div id="generatorSection" class="bg-white p-4 rounded-xl shadow-md">
+                <h3 id="generatorTitle" class="font-bold text-gray-800 mb-3 text-sm">🎫 إصدار وتصدير الأكواد</h3>
+                
+                <div id="adminGeneratorControls" class="space-y-3 mb-4 hidden border-b pb-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[11px] text-gray-600 block mb-1">نوع الأكواد للإصدار:</label>
+                            <select id="codeTypeSelect" class="w-full p-2 text-xs border rounded bg-white">
+                                <option value="dody">أكواد صالون دودي روز (DR)</option>
+                                <option id="partnerOptionLabel" value="partner">أكواد الجهة الشريكة (PR)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-gray-600 block mb-1">العدد:</label>
+                            <select id="codeCountSelect" class="w-full p-2 text-xs border rounded bg-white">
+                                <option value="5">5 أكواد</option>
+                                <option value="10" selected>10 أكواد</option>
+                                <option value="20">20 كود</option>
+                                <option value="50">50 كود</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="generateCodes()" class="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition text-xs">توليد وإصدار الأكواد الجديدة</button>
+                </div>
+
+                <!-- أقسام التصدير المستقلة لكل جهة (تظهر للمدير فقط) -->
+                <div id="exportSection" class="mb-4 hidden space-y-3 bg-gray-50 p-3 rounded-lg border">
+                    <label class="text-xs text-gray-800 font-bold block border-b pb-1">📥 تصدير الأكواد الفعالة (نشطة وغير مستخدمة):</label>
+                    
+                    <!-- تصدير أكواد الصالون DR -->
+                    <div class="flex justify-between items-center bg-white p-2 rounded border">
+                        <span class="text-xs font-semibold text-pink-700">أكواد صالون دودي روز (DR)</span>
+                        <div class="flex gap-1">
+                            <button onclick="exportActiveCodes('dody', 'excel')" class="bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-emerald-800">📊 Excel</button>
+                            <button onclick="exportActiveCodes('dody', 'pdf')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-red-700">📄 PDF (مع QR)</button>
+                        </div>
+                    </div>
+
+                    <!-- تصدير أكواد الشريك PR -->
+                    <div class="flex justify-between items-center bg-white p-2 rounded border">
+                        <span id="partnerExportLabel" class="text-xs font-semibold text-indigo-700">أكواد الشريك (PR)</span>
+                        <div class="flex gap-1">
+                            <button onclick="exportActiveCodes('partner', 'excel')" class="bg-emerald-700 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-emerald-800">📊 Excel</button>
+                            <button onclick="exportActiveCodes('partner', 'pdf')" class="bg-red-600 text-white px-2 py-1 rounded text-[11px] font-semibold hover:bg-red-700">📄 PDF (مع QR)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-2">
+                    <span id="listHeading" class="text-xs font-bold text-gray-700">القائمة:</span>
+                    <button onclick="loadMyCodes()" class="text-xs text-blue-600 hover:underline">🔄 تحديث القائمة</button>
+                </div>
+                <div id="generatedList" class="space-y-4 max-h-96 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="text-center p-4 text-xs text-gray-400">
+        جميع الحقوق محفوظة © 2026 صالون دودي روز
+    </footer>
+
+    <!-- عنصر خفي لتوليد صور الـ QR بصرياً عند تصدير الـ PDF -->
+    <div id="hiddenQrContainer" style="display:none;"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9zQqXFtL_YPnbVbLL2o8hC-wP3GaStZ8",
+            authDomain: "dody-rose-promo.firebaseapp.com",
+            projectId: "dody-rose-promo",
+            storageBucket: "dody-rose-promo.firebasestorage.app",
+            messagingSenderId: "596650039662",
+            appId: "1:596650039662:web:f1c47d7636841721d3c97f",
+            measurementId: "G-PB7253TZ9L"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let configData = JSON.parse(localStorage.getItem('dody_config')) || {
+            adminPin: "1122",
+            receptionPin: "3344",
+            partnerPin: "8899",
+            partnerName: "الجهة الخدمية الشريكة"
+        };
+
+        let currentRole = "";
+        let html5QrCode = null;
+        let isScannerRunning = false;
+
+        window.verifyPin = function() {
+            const pin = document.getElementById('pinInput').value.trim();
+            const errorMsg = document.getElementById('loginError');
+            
+            if (pin === configData.adminPin) {
+                openPanel('admin', true, true);
+            } else if (pin === configData.receptionPin) {
+                openPanel('reception', false, false);
+            } else if (pin === configData.partnerPin) {
+                openPanel('partner', false, false);
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function openPanel(role, canGenerate, isAdmin) {
+            currentRole = role;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            
+            document.getElementById('partnerOptionLabel').innerText = `أكواد ${configData.partnerName} (PR)`;
+            document.getElementById('partnerExportLabel').innerText = `أكواد ${configData.partnerName} (PR)`;
+
+            let title = "";
+            if (role === 'admin') title = "إدارة صالون دودي روز (صلاحية كاملة)";
+            else if (role === 'reception') title = "استقبال صالون دودي روز (أكواد DR)";
+            else title = `لوحة تحكم الشريك: ${configData.partnerName}`;
+            
+            document.getElementById('panelTitle').innerText = title;
+
+            if (isAdmin) {
+                document.getElementById('settingsToggleBtn').classList.remove('hidden');
+                document.getElementById('settingPartnerName').value = configData.partnerName;
+                document.getElementById('settingPinAdmin').value = configData.adminPin;
+                document.getElementById('settingPinReception').value = configData.receptionPin;
+                document.getElementById('settingPinPartner').value = configData.partnerPin;
+            }
+
+            if (role === 'reception') {
+                document.getElementById('generatorSection').classList.add('hidden');
+            } else {
+                document.getElementById('generatorSection').classList.remove('hidden');
+                if (isAdmin) {
+                    document.getElementById('adminGeneratorControls').classList.remove('hidden');
+                    document.getElementById('exportSection').classList.remove('hidden');
+                } else {
+                    document.getElementById('adminGeneratorControls').classList.add('hidden');
+                    document.getElementById('exportSection').classList.add('hidden');
+                }
+                loadMyCodes();
+            }
+        }
+
+        window.toggleSettings = function() {
+            const settingsSec = document.getElementById('adminSettingsSection');
+            settingsSec.classList.toggle('hidden');
+        }
+
+        window.saveSettings = function() {
+            configData.partnerName = document.getElementById('settingPartnerName').value.trim() || "الجهة الخدمية الشريكة";
+            configData.adminPin = document.getElementById('settingPinAdmin').value.trim() || "1122";
+            configData.receptionPin = document.getElementById('settingPinReception').value.trim() || "3344";
+            configData.partnerPin = document.getElementById('settingPinPartner').value.trim() || "8899";
+            
+            localStorage.setItem('dody_config', JSON.stringify(configData));
+            alert("✅ تم حفظ الإعدادات بنجاح!");
+            location.reload();
+        }
+
+        window.generateCodes = async function() {
+            const typeSelect = document.getElementById('codeTypeSelect').value;
+            const countSelect = document.getElementById('codeCountSelect');
+            const totalToGenerate = parseInt(countSelect.value);
+            const listDiv = document.getElementById('generatedList');
+            
+            listDiv.innerHTML = `<p class='text-blue-600 text-center text-xs'>جاري إصدار ${totalToGenerate} كود جديد...</p>`;
+            
+            try {
+                for(let i = 1; i <= totalToGenerate; i++) {
+                    const prefix = (typeSelect === 'dody') ? "DR-" : "PR-";
+                    const randomCode = prefix + Math.random().toString(36).substring(2, 8).toUpperCase();
+                    await addDoc(collection(db, "promo_codes"), {
+                        code: randomCode,
+                        issuer: typeSelect,
+                        status: "active",
+                        createdAt: new Date()
+                    });
+                }
+                loadMyCodes();
+            } catch(e) {
+                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs'>حدث خطأ أثناء الاتصال بقاعدة البيانات.</p>";
+            }
+        }
+
+        window.loadMyCodes = async function() {
+            const listDiv = document.getElementById('generatedList');
+            if(!listDiv) return;
+            listDiv.innerHTML = "<p class='text-gray-500 text-center text-xs'>جاري جلب الأكواد...</p>";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "promo_codes"));
+                listDiv.innerHTML = "";
+                let count = 0;
+
+                querySnapshot.forEach((docItem) => {
+                    let data = docItem.data();
+                    let showCode = false;
+                    if (currentRole === 'admin') {
+                        showCode = true;
+                    } else if (currentRole === 'reception') {
+                        if (data.issuer === 'dody') showCode = true;
+                    } else if (currentRole === 'partner') {
+                        if (data.issuer === 'partner') showCode = true;
+                    }
+
+                    if (showCode) {
+                        count++;
+                        const isUsed = data.status === 'used';
+                        const statusBadge = !isUsed 
+                            ? '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[11px] font-bold">نشط (صالح)</span>' 
+                            : '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[11px] font-bold">مستخدم (منتهي)</span>';
+                        
+                        const qrContainerId = `qr-${docItem.id}`;
+                        const card = document.createElement('div');
+                        card.className = `p-3 rounded-xl border ${isUsed ? 'bg-gray-100 opacity-70' : 'bg-white shadow-sm'} flex items-center justify-between gap-3`;
+                        
+                        card.innerHTML = `
+                            <div class="flex flex-col items-center">
+                                <div id="${qrContainerId}" class="p-1 bg-white border rounded"></div>
+                            </div>
+                            <div class="flex-grow text-right space-y-1">
+                                <div class="font-mono font-bold text-gray-800 text-sm">${data.code} (${data.issuer === 'dody' ? 'صالون' : 'شريك'})</div>
+                                <div>${statusBadge}</div>
+                                ${!isUsed ? `
+                                <div class="pt-2 flex flex-wrap gap-1">
+                                    <button onclick="downloadQR('${qrContainerId}', '${data.code}')" class="bg-gray-800 text-white px-2 py-1 rounded text-[11px] hover:bg-gray-700">⬇️ حفظ الصورة</button>
+                                    <button onclick="sendWhatsApp('${data.code}')" class="bg-emerald-600 text-white px-2 py-1 rounded text-[11px] hover:bg-emerald-700">📲 واتساب</button>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+
+                        new QRCode(document.getElementById(qrContainerId), {
+                            text: data.code,
+                            width: 75,
+                            height: 75,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                    }
+                });
+
+                if (count === 0) {
+                    listDiv.innerHTML = "<p class='text-gray-400 text-center text-xs'>لا توجد أكواد مطابقة لهذه الصفحة حالياً.</p>";
+                }
+            } catch (error) {
+                listDiv.innerHTML = "<p class='text-red-500 text-center text-xs'>خطأ في جلب الأكواد.</p>";
+            }
+        }
+
+        // دالة تصدير الأكواد الفعالة لكل جهة على حدة مع تضمين صور رمز QR في ملف PDF
+        window.exportActiveCodes = async function(targetIssuer, format) {
+            const targetTitle = (targetIssuer === 'dody') ? 'أكواد صالون دودي روز (DR)' : `أكواد الشريك ${configData.partnerName} (PR)`;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "promo_codes"));
+                let activeCodes = [];
+
+                querySnapshot.forEach((docItem) => {
+                    let data = docItem.data();
+                    if (data.issuer === targetIssuer && data.status === 'active') {
+                        activeCodes.push(data.code);
+                    }
+                });
+
+                if (activeCodes.length === 0) {
+                    alert(`⚠️ لا توجد أكواد فعالة (نشطة) خاصة بـ [ ${targetIssuer === 'dody' ? 'الصالون' : configData.partnerName} ] لتصديرها!`);
+                    return;
+                }
+
+                if (format === 'excel') {
+                    let excelData = activeCodes.map((code, index) => ({
+                        "م": index + 1,
+                        "كود الخصم": code,
+                        "الجهة المصدرة": targetIssuer === 'dody' ? 'صالون دودي روز' : configData.partnerName,
+                        "الحالة": "نشط"
+                    }));
+
+                    let worksheet = XLSX.utils.json_to_sheet(excelData);
+                    let workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, "Active Codes");
+                    XLSX.writeFile(workbook, `Active_Codes_${targetIssuer}.xlsx`);
+
+                } else if (format === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const docPDF = new jsPDF();
+
+                    docPDF.setFont("helvetica", "bold");
+                    docPDF.setFontSize(14);
+                    docPDF.text(`Active Promo Codes - ${targetTitle}`, 105, 15, { align: 'center' });
+
+                    let y = 25;
+                    const hiddenContainer = document.getElementById('hiddenQrContainer');
+                    hiddenContainer.innerHTML = "";
+
+                    for (let i = 0; i < activeCodes.length; i++) {
+                        let code = activeCodes[i];
+
+                        if (y > 250) {
+                            docPDF.addPage();
+                            y = 20;
+                        }
+
+                        // رسم نص الكود
+                        docPDF.setFontSize(11);
+                        docPDF.text(`${i + 1}. Code: ${code} [Status: Active]`, 20, y + 10);
+
+                        // توليد رمز QR بصرياً داخل عنصر مخفي للحصول على صورة Base64
+                        let tempDiv = document.createElement('div');
+                        hiddenContainer.appendChild(tempDiv);
+                        
+                        let qr = new QRCode(tempDiv, {
+                            text: code,
+                            width: 60,
+                            height: 60,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+
+                        // الانتظار حتى يتم رندر الرمز واستخلاص صورته
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        let canvas = tempDiv.querySelector('canvas');
+                        let imgData = canvas ? canvas.toDataURL("image/png") : "";
+
+                        if (imgData) {
+                            // إدراج صورة QR بجانب الكود في ملف الـ PDF
+                            docPDF.addImage(imgData, 'PNG', 130, y, 25, 25);
+                        }
+
+                        y += 32;
+                    }
+
+                    docPDF.save(`Active_Codes_${targetIssuer}_with_QR.pdf`);
+                }
+
+            } catch (err) {
+                alert("حدث خطأ أثناء التصدير: " + err.message);
+            }
+        }
+
+        window.downloadQR = function(containerId, codeName) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            const img = container.querySelector('img');
+            const canvas = container.querySelector('canvas');
+            let imageUrl = (img && img.src) ? img.src : (canvas ? canvas.toDataURL("image/png") : "");
+
+            if (imageUrl) {
+                const link = document.createElement('a');
+                link.href = imageUrl;
+                link.download = `Coupon-${codeName}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        window.sendWhatsApp = function(codeName) {
+            const sender = (currentRole === 'partner') ? configData.partnerName : 'صالون دودي روز للتزيين النسائي';
+            const receiver = (currentRole === 'partner') ? 'صالون دودي روز للتزيين النسائي' : configData.partnerName;
+            const message = `مرحباً بك عميلتنا العزيزة 🌸\nيسر *${sender}* إهداءك قسيمة خصم خاصة للاستفادة منها لدى *${receiver}*.\n\nرمز القسيمة: *${codeName}*\n(يرجى إبراز صورة الـ QR Code عند الاستقبال - صالح للاستخدام مرة واحدة).`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        }
+
+        window.toggleScanner = function() {
+            const readerDiv = document.getElementById('reader');
+            const toggleBtn = document.getElementById('scannerToggleBtn');
+
+            if (!isScannerRunning) {
+                readerDiv.classList.remove('hidden');
+                toggleBtn.innerText = "🔴 إغلاق الكاميرا";
+                toggleBtn.className = "bg-red-100 text-red-700 py-2 rounded text-xs font-semibold hover:bg-red-200 transition";
+                
+                try {
+                    if (!html5QrCode) {
+                        html5QrCode = new Html5Qrcode("reader");
+                    }
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: 200 },
+                        (decodedText) => {
+                            processCodeCheck(decodedText);
+                            toggleScanner();
+                        },
+                        (errorMessage) => {}
+                    ).then(() => {
+                        isScannerRunning = true;
+                    }).catch(err => {
+                        alert("تعذر تشغيل الكاميرا، تأكد من إعطاء إذن الكاميرا.");
+                        toggleScanner();
+                    });
+                } catch(e) {
+                    console.log(e);
+                }
+            } else {
+                stopScanner();
+            }
+        }
+
+        function stopScanner() {
+            if (html5QrCode && isScannerRunning) {
+                html5QrCode.stop().then(() => {
+                    isScannerRunning = false;
+                    document.getElementById('reader').classList.add('hidden');
+                    const toggleBtn = document.getElementById('scannerToggleBtn');
+                    toggleBtn.innerText = "🟢 الكاميرا المباشرة";
+                    toggleBtn.className = "bg-emerald-600 text-white py-2 rounded text-xs font-semibold hover:bg-emerald-700 transition";
+                }).catch(err => {});
+            }
+        }
+
+        window.scanImageFile = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, img.width, img.height);
+                    
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                    if (code) {
+                        processCodeCheck(code.data);
+                    } else {
+                        const resultDiv = document.getElementById('scanResult');
+                        resultDiv.classList.remove('hidden');
+                        resultDiv.innerText = "❌ لم يتم التعرف على الرمز في الصورة، حاول رفع صورة أوضح أو أدخله يدوياً.";
+                        resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        window.verifyCodeManual = function() {
+            const input = document.getElementById('scanCodeInput');
+            if(!input) return;
+            const codeText = input.value.trim().toUpperCase();
+            if(codeText) {
+                processCodeCheck(codeText);
+                input.value = "";
+            }
+        }
+
+        async function processCodeCheck(codeText) {
+            const resultDiv = document.getElementById('scanResult');
+            if(!resultDiv) return;
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerText = "جاري التحقق من الكود...";
+            resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-yellow-100 text-yellow-800";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "promo_codes"));
+                let foundDoc = null;
+                
+                querySnapshot.forEach((docItem) => {
+                    let data = docItem.data();
+                    if (data.code === codeText) {
+                        foundDoc = { id: docItem.id, ...data };
+                    }
+                });
+
+                if (!foundDoc) {
+                    resultDiv.innerText = "❌ الكود غير موجود أو غير صحيح!";
+                    resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                    return;
+                }
+
+                if (foundDoc.status === "used") {
+                    resultDiv.innerText = "⚠️ تنبيه: هذا الكود تم استخدامه مسبقاً!";
+                    resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+                    return;
+                }
+
+                const codeRef = doc(db, "promo_codes", foundDoc.id);
+                await updateDoc(codeRef, { status: "used" });
+
+                resultDiv.innerText = "✅ الكود صالح وتم تفعيل الخصم بنجاح! (تم إيقاف الكود)";
+                resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-green-100 text-green-700";
+                
+                loadMyCodes();
+            } catch (error) {
+                resultDiv.innerText = "حدث خطأ أثناء التحقق: " + error.message;
+                resultDiv.className = "mt-3 p-3 rounded-lg text-center text-sm font-bold bg-red-100 text-red-700";
+            }
+        }
+    </script>
+</body>
+</html>
